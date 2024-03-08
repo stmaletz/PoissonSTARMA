@@ -1,0 +1,87 @@
+In diesem Abschnitt wenden wir die Modelle aus dieser Arbeit auf echte Daten an. Hierfür betrachten wir den Chicago Crime Dataset, welcher in der Arbeit von Clark und Nixon (2021) vorgestellt und modelliert wurde und auf GitHub unter dem Link \url{https://github.com/nick3703/Chicago-Data} abrufbar ist.
+Er enthält die monatlich aggregierten erfassten Anzahlen an Einbrüchen im Zeitraum von 2010 bis 2015 (72 Monate) in 552 Zensus Block Gruppen. Zwei Blöcke werden als benachbart aufgefasst, falls sie eine gemeinsame Grenze miteinander teilen.
+Neben diesen Daten stehen ebenfalls Werte für sozio-ökonomische Kovariablen wie die Bevölkerungsgröße, den Anteil junger Männer (zwischen 15 und 20 Jahre alt), das Pro-Kopf-Einkommen sowie die Arbeitslosenrate zur Verfügung.
+
+Die Daten wurden außer ebenfalls bereits in den Arbeiten von Armilotta und Fokianos (2022), sowie Weiss (2023) als Datenbeispiel betrachtet.
+Armilotta und Fokianos (2022) verwenden für die Modellierung lineare und log-lineare PNAR(1) und PNAR(2)-Prozesse. Diese sind identisch zu linearen und log-linearen PSTARMA(1_1, 0) und PSTARMA(2_{1, 1}, 0)- Prozessen sind.
+Weiss (2023) stellt ein approximativ lineares INGARCH-Modell für räumlich-zeitliche Daten vor, welches ähnlich zu den linearen PSTARMA-Prozessen ist, jedoch zusätzlich eine Softmax-Funktion anwendet, wodurch auch negative Parameter auftreten dürfen.
+
+Beide Arbeiten beziehen im Gegensatz zur Arbeit von Clark und Nixon (2021) keine Kovariablen mit ein, wodurch sozio-ökonomische und saisonale Effekte nicht sehr gut erfasst werden. 
+Zusätzlich zu den Kovariablen aus der Arbeit von Clark und Nixon (2021) beziehen wir die monatliche Durchschnittstemperatur in Chicago (in °F) aus dem Beobachtungszeitraum mit in die Modellierung ein. Die Temperaturdaten sind von der Internetseite weather.gov heruntergeladen.
+Da die Temperaturdaten ein saisonales Verhalten aufweisen, lässt sich hiermit ebenfalls ein saisonales Verhalten in den Einbruchszahlen modellieren. Bei der Kovariable Pro-Kopf-Einkommen handelt es sich bei Clark und Nixon (2021) um das logarithmierte Pro-Kopf-Einkommen.
+Hierdurch treten negative Werte auf, welche in linearen PSTARMAX-Modellen nicht einbezogen werden können. Wir transformieren die Variable daher über $\tilde{x} = \log(exp(x) + 1)$, wodurch negative Werte vermieden werden, die Daten jedoch weiterhin auf einer vergleichbaren Skala liegen.
+
+## Grafik Temperatur vs Einbruchszahlen
+## Grafik akkumulierte Einbruchsdelikte und akkumulierte Vorhersagen.
+
+
+Insgesamt wurden im Beobachtungszeitraum von 2010 bis 2015 in den 552 Blöcken 47836 Einbruchsdelikte erfasst, welches im Durchschnitt 86.66 Einbruchsdelikte pro Block oder 664.39 Delikten pro Monat entspricht.
+Die maximale Anzahl an Einbrüchen, die in einem Monat (Februar 2012) innerhalb von einem Block erfasst wurde beträgt 17. Der Monat mit den meisten Einbrüchen über alle 552 Blöcke aufsummiert war August 2010 mit 1174 Einbrüchen.
+In Abbildung~x ist erkennbar, dass in wärmeren Monaten tendenziell mehr Einbrüche erfasst wurden. Generell ist in den Daten jedoch ein abnehmender Trend zu erkennen, wie in Abbildung~y ersichtlich.
+
+# Tabelle mit geschätzten Koeffizienten von Modellen ohne Kovariablen
+
+Bei der Restiktion auf rein autoregressive Modelle, wie den linearen PSTARMA(1_1, 0) und PSTARMA(2_{1, 1}, 0)-Prozessen können wir die Parameterschätzungen und Standardfehler von Armilotta und Fokianos (2022) bestätigen, siehe Tabelle~x. 
+Für die log-linearen Modelle unterscheiden sich die Parameterschätzungen von den in Armilotta und Fokianos (2022) angegebenen. Dies lässt sich darauf zurückführen, dass Armilotta und Fokianos (2022) die Parameter unter der Nebenbedingung einer stationären Lösung schätzen, während wir auch nichtstationäre Lösungen zulassen.
+In Tabelle~x sind die geschätzen Parameter verschiedener PSTARMA-Prozesse (ohne Kovariablen), sowie die zugehörigen AICs (bestimmt anhand der Quasi-Likelihood) aufgeführt. Sowohl bei den linearen als auch bei den log-linearen PSTARMA-Prozessen fällt auf, dass die Erhöhung der Modellordnung zu einer Verringerung des AIC führt.
+
+
+Das Hinzufügen einer höheren zeitlichen Ordnung hinsichtlich der Beobachtungen (Modell II & Modell VI) führt zu einer stärkeren Verringerung des AIC als Modelle mit Feedbackterm erster Ordnung (Modell III & VIII). 
+Von den betrachteten Modellen erreicht das log-lineare PSTARMA($2_{1, 1}, 2_{1, 1}$)-Modell den geringsten Wert im AIC, jedoch weisen die geschätzten Parameter auf einen nicht-stationären Prozess hin, wie dies bereits von Weiss (2023) festgestellt wurde.
+Bei den rein autoregressiven Prozessen (Modell I, II, V & VI) sind alle geschätzen Parameter signifikant von 0 verschieden (Asymptotischer p-Wert << 0.05). In den Modell III & VII werden alle Parameter bis auf $\alpha_{1, 1}$ signifikant (p < 0.05) von 0 verschieden geschätzt. Für die Modelle IV und VIII ergibt sich lediglich eine Signifikanz (p < 0.05) für die autoregressiven Parameter $\beta_{0, 1}$ und $\beta_{1, 1}$
+Die starken Unterschiede in den relevanten Parametern in den Modellen III, IV, VII und VIII sind vermutlich der Nichtstationarität der Daten in Kombination mit einer kleinen Stichprobe (n = 72), sowie einer vergleichsweise hohen Modellordnung, welche durch Hinzufügen von $\bm{\lambda}_{t - 2}$ bzw. $\bm{\nu}_{t - 2}$ geschuldet.
+
+# Tabelle mit geschätzten Koeffizienten von Modellen mit Kovariablen
+
+Die Schätzungen der Parameter in den PSTARMAX-Prozessen, die zusätzlich die zuvor erwähnten Kovariablen einbeziehen, sind in Tabelle~y aufgeführt. Des Weiteren haben wir Modelle betrachtet, in welchen wir einen negativen linearen Trend hinzufügen, der durch die Kovariable $x_t = 72 - t$, für $t = 1, \ldots, 72$, beschrieben wird.
+
+In zwei Fällen war keine Parameterschätzung möglich, nämlich bei linearen PSTARMAX-Modellen ohne Feedbackterm. Modell (i) mit dem Trend-Kovariable konnte gar nicht geschätzt werden. In Modell (iii) musste zusätzlich die Temperatur als Kovariable entfernt werden, um eine Schätzung zu ermöglichen. Da die verbleibenden Kovariablen zeitlich konstant in das Modell einfließen, ähnelt das Modell stark dem Modell III in Tabelle~x. Es unterscheiden sich lediglich die Parameterschätzungen der autoregressiven Terme und der Bevölkerungsgröße, die sich als signifikant von null unterscheiden (p < 0.05).
+
+In den linearen PSTARMAX-Prozessen mit Feedbacktermen (ii und iv) zeigt sich, dass keine der betrachteten Kovariablen signifikant mit dem Prozess in Verbindung steht. Stattdessen sind nur die Parameter für die Regressionsanalyse vergangener Beobachtungen am gleichen Ort ($\beta_{0,1}$) und in benachbarten Orten ($\beta_{1, 1$) sowie der Feedbackterm am gleichen Ort ($\alpha_{0,1}$) signifikant.
+
+Im direkten Vergleich mit den log-linearen PSTARMAX-Prozessen gleicher Ordnung zeigt sich jeweils ein höheres AIC bei den linearen Prozessen. Zudem neigen die log-linearen Prozesse dazu, sowohl die Bevölkerungsgröße als auch die Temperatur als wichtiger anzuerkennen (zusammen signifikant in den Modellen v, vi, viii) als die linearen Prozesse. Der Einfluss beider Kovariablen erscheint auch intuitiv, da Orte mit höherer Bevölkerungsdichte tendenziell mehr Einbruchsmöglichkeiten bieten, und wärmere Temperaturen die Möglichkeit von Einbrüchen begünstigen könnten, während bei kälteren Temperaturen die Menschen eher zuhause sind und Einbrüche eher entdeckt werden.
+
+Durch das Einbeziehen des Feedbackterms in Modell (vi) anstelle von Modell (v) wird der lineare abnehmende Trend nicht mehr als signifikant erachtet. Stattdessen wird der entsprechende Parameter des Feedbackterms als signifikant von 0 verschieden erkannt, und das AIC wird deutlich reduziert. Es ist anzunehmen, dass der abnehmende Trend möglicherweise direkt durch den Feedbackterm erfasst wird. Die geschätzten Parameter deuten ebenfalls auf einen nicht-stationären Prozess hin.
+
+Insgesamt zeigen alle in dieser Studie betrachteten Modelle eine deutliche räumliche Abhängigkeit in den Beobachtungen, die möglicherweise durch lokale Einbrecherbanden erklärt werden kann. Die log-linearen Modelle scheinen die Daten insgesamt besser zu modellieren als die linearen Modelle. Dies zeigt sich beispielsweise in Abbildung~x, in der die akkumulierten Einbruchszahlen für jeden Monat sowie die akkumulierten geschätzten Werte der Modelle (iv) - (vi) dargestellt sind. Während die beiden log-linearen Modelle die Prozessdynamik gut zu erfassen scheinen, ist der lineare Prozess aufgrund der Parameterbeschränkungen nicht ausreichend flexibel.
+
+Die hier gefundenen Abhängigkeiten stimmen in großen Teilen mit den Ergebnissen von Clark und Nixon (2021) überein, die räumliche Abhängigkeiten in den Beobachtungen feststellten, sowie relevante Einflüsse der Bevölkerungsgröße und dem Anteil junger Männer.
+
+
+
+
+------ Beschreibung Datensatz 2 ------
+
+
+
+
+
+% Bevölkerungsentwicklung: https://www.ksh.hu/stadat_files/nep/en/nep0034.html
+% https://archive.ics.uci.edu/dataset/734/traffic+flow+forecasting-1
+% https://github.com/benedekrozemberczki/spatiotemporal_datasets
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
