@@ -20,10 +20,12 @@ max(crime)
 which(crime == max(crime), arr.ind = TRUE)
 
 
-pdf("plots/crime_temperature.pdf", width = 11, height = 8)
-plot(apply(crime, 1, sum) ~ temperature, ylab = "Monthly number of burglaries", xlab = "Temperature (°F)")
+pdf("plots/crime_temperature.pdf", width = 11, height = 9)
+par(mar = c(5, 5, 4, 2) + 0.1)
+plot(apply(crime, 1, sum) ~ temperature, ylab = "Monthly number of burglaries", xlab = "Temperature (°F)",
+     cex = 2.5, cex.lab=2.5, cex.axis=2.5)
 crime_temp <- lm(apply(crime, 1, sum) ~ temperature)
-abline(crime_temp)
+abline(crime_temp, lwd = 1.5)
 dev.off()
 
 crime_sum <- ts(apply(crime, 1, sum), start = c(2010, 1), end = c(2015, 12), frequency = 12)
@@ -138,12 +140,14 @@ subset(orders, (obs == 2 & means == 0) | (obs == 2 & means == 2))
 
 ####
 
-pdf("plots/crime_accu.pdf", width = 11, height = 8)
-
-plot(rowSums(crime), ylab = "Accumulated Buglaries", xlab = "Month")
-points(colSums(fitted.values(models_considered[[1]])), type = "l", col = "lightblue")
-points(colSums(fitted.values(models_considered[[8]])), type = "l", col = "orange")
-legend("topright", legend = c("linear", "log-linear"), lty = 1, col = c("lightblue", "orange"))
+pdf("plots/crime_accu.pdf", width = 11, height = 9)
+par(mar = c(5, 5, 4, 2) + 0.1)
+plot(rowSums(crime), ylab = "Accumulated Buglaries", xlab = "Month",
+     cex = 2.5, cex.lab=2.5, cex.axis=2.5)
+points(colSums(fitted.values(models_considered[[1]])), type = "l", col = "lightblue", lwd = 1.5)
+points(colSums(fitted.values(models_considered[[8]])), type = "l", col = "orange", lwd = 1.5)
+legend("topright", legend = c("linear", "log-linear"), lty = 1, col = c("lightblue", "orange"),
+       cex = 2.5, lwd = 1.5)
 
 dev.off()
 ##

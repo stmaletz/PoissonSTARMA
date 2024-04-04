@@ -45,18 +45,21 @@ rota <- rota[match(shape$RKI_ID, row.names(rota)),]
 
 means <- log(rowMeans(rota))
 
-pdf("incidence_rota.pdf", width = 8, height = 15)
+pdf("incidence_rota.pdf", width = 8, height = 12)
 x <- shape
 x$LogIncidence <- means - log(population / 100000)
 x$RKI_NameDE <- NULL
 x$RKI_NameEN <- NULL
 x$RKI_ID <- NULL
-plot(x, main = "Logarithmic Mean Incidence")
+plot(x, main = NULL)
 dev.off()
 
-pdf("rota_cases.pdf", width = 12, height = 8)
+pdf("rota_cases.pdf", width = 10, height = 12)
+par(mar = c(5, 5, 4, 2) + 0.1, cex.axis=1.5,cex.lab=1.5,cex=1.5)
 colsum_rota <- ts(colSums(rota), start = c(2001, 1), frequency = 365.25/7)
-plot(colsum_rota, type = "o", pch = 16)
+plot(colsum_rota, type = "o", 
+     ylab = "Weekly number of rota cases", xlab = "Date", 
+     pch = 16)
 dev.off()
 
 covariates_log <- list()
