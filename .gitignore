@@ -1,3 +1,7 @@
+# Hidden files
+.*
+!/.gitignore
+
 # DS_Store
 .DS_Store
 
