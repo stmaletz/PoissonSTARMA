@@ -3,8 +3,8 @@ library("ggplot2")
 library("xtable")
 library("scales")
 
-# copula <- "Clayton"
-copula <- "Frank"
+copula <- "Clayton"
+#copula <- "Frank"
 
 
 
@@ -14,12 +14,26 @@ results <- lapply(list.files(paste0(copula, "/init/"), full.names = TRUE), readR
 settings <- lapply(results, function(x) x$setting)
 settings <- rbindlist(settings)
 
+
+params <- lapply(results, "[[", "param_est")
+params <- lapply(params, function(x) lapply(x, unlist))
+for(i in seq_along(params)){
+  if(results[[i]]$setting$link == "log"){
+    params[[i]] <- which(sapply(params[[i]], function(y) length(y) == 1 | y[4] == 0))
+  } else {
+    params[[i]] <- which(sapply(params[[i]], function(y) length(y) == 1 | y[4] == 1))
+  }
+}
+
+
+
+
 fitting_times <- sapply(results, function(x) x$fitting_times)
 sum(is.na(fitting_times))
 which(is.na(fitting_times), arr.ind = TRUE)
-# Insgesamt 12 Fehlschlaege im linearen Modell mit 50 Beobachtungen ohne Kovariablen
-# bei initialisierung ueber 0
-# Fehlschlaege im linearen Modell
+unique(settings[which(is.na(fitting_times), arr.ind = TRUE)[, 2],])
+
+# Failing to fit a model only when using zero initialization
 
 calc_mse <- function(elem){
   # browser()

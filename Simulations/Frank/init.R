@@ -1,31 +1,35 @@
 library("glmSTARMA")
 library("copula")
+library("tictoc")
 
 index <- as.numeric(Sys.getenv("PBS_ARRAYID"))
 iterations <- 1000
 
-
-# 144 settings
-
+# replicate=1-288
 settings <- expand.grid(init_link = c("first_obs", "mean", "transformed_mean", "zero", "true"),
                         link = c("log", "identity"),
-                        obs = c(50, 100, 250, 500),
+                        obs = c(5, 10, 20, 50, 100, 250, 500),
+                        dim = c(9, 50),
                         order = c(1, 2),
                         covariate = c(TRUE, FALSE),
                         stringsAsFactors = FALSE)
 settings <- subset(settings, !(init_link == "transformed_mean" & link == "identity"))
-W <- generateW("rectangle", dim = 81, 6, width = 9)
+settings <- subset(settings, !(dim == 9 & obs < 50))
+settings <- subset(settings, !(dim == 50 & obs > 50))
+settings <- settings[order(settings$dim),]
+
+W <- generateW("rectangle", dim = settings$dim[index]^2, 3, width = settings$dim[index])
 
 
 # Generate covariate process
 set.seed(42)
-covariates <- t(replicate(81,
-                          arima.sim(n = 1000, 
-                                    list(ar = c(0.89, -0.3), ma = c(-0.1, 0.28)), 
+covariates <- t(replicate(settings$dim[index]^2,
+                          arima.sim(n = 1000,
+                                    list(ar = c(0.89, -0.3), ma = c(-0.1, 0.28)),
                                     rand.gen = runif)))
 covariates <- covariates / max(covariates)
-
-
+covariates[covariates < 0] <- 0
+covariates <- covariates[seq(settings$dim[index]),]
 covariates <- covariates[, seq(settings$obs[index])]
 
 if(settings$covariate[index]){
@@ -88,22 +92,26 @@ for(i in seq(iterations)){
   }
   sim <- glmstarma.sim(settings$obs[index], params, model, W, covariate, family = fam, n_start = 100)
   if(settings$init_link[index] == "true"){
+    tic()
     fit <- try(glmstarma(sim$observations, model = model, wlist = W, covariates = covariate, family = fam,
-                         control = list(parameter_init = "zero", maxit = 1000L,
+                         control = list(parameter_init = "zero", maxit = 10000L,
                                         init_link = sim$link_values[, seq(settings$order[index]), drop = FALSE],
                                         method = "nloptr", constrained = TRUE)), TRUE)
+    time <- toc(quiet = TRUE)
   } else {
+    tic()
     fit <- try(glmstarma(sim$observations, model = model, wlist = W, covariates = covariate, family = fam,
-                                     control = list(parameter_init = "zero", maxit = 1000L,
+                                     control = list(parameter_init = "zero", maxit = 10000L,
                                                     init_link = settings$init_link[index],
                                                     method = "nloptr", constrained = TRUE)), TRUE)
+    time <- toc(quiet = TRUE)
   }
   if(inherits(fit, "try-error")){
     param_est[[i]] <- NA
     fitting_times[i] <- NA
     converged[i] <- FALSE
   } else {
-    fitting_times[i] <- fit$convergence$fitting_time
+    fitting_times[i] <- time$toc - time$tic
     param_est[[i]] <- fit$coefficients_list
     converged[i] <- fit$convergence$convergence
   }
@@ -116,7 +124,3 @@ results <- list(fitting_times = fitting_times,
                 setting = settings[index,])
 
 saveRDS(results, file = paste0("init/init_sim_setting_", index, ".rds"))
-
-
-
-

@@ -82,12 +82,12 @@ res <- rbind(res_data, res_data2)
 
 plot_mae_data_linear <- ggplot(subset(res, link == "identity")) + 
     geom_boxplot(aes(x = obs, group = interaction(obs, model), y = mae, fill = model)) + 
-    labs(x = "Observation times", y = "MAE in Data", fill = "Intercept") + 
+    labs(x = "Observation times", y = "MAE", fill = "Intercept") + 
     theme_bw() + theme(legend.position = "bottom", text = element_text(size = 30))
 
 plot_mae_data_log <- ggplot(subset(res, link == "log")) + 
   geom_boxplot(aes(x = obs, group = interaction(obs, model), y = mae, fill = model)) + 
-  labs(x = "Observation times", y = "MAE in Data", fill = "Intercept") + 
+  labs(x = "Observation times", y = "MAE", fill = "Intercept") + 
   theme_bw() + theme(legend.position = "bottom", text = element_text(size = 30))  
 
 ggsave(paste0("plots/Appendix/intercept/intercept_mae_data_log.pdf"), plot_mae_data_log, width = 12, height = 10)  

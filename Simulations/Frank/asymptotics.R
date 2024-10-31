@@ -1,29 +1,34 @@
 library("glmSTARMA")
 library("copula")
+library("tictoc")
 
 index <- as.numeric(Sys.getenv("PBS_ARRAYID"))
 iterations <- 1000
 
-settings <- expand.grid(dim = c(5, 7, 9),
+# replicate=1-350
+settings <- expand.grid(dim = c(5, 7, 9, 50),
                         link = c("log", "identity"),
-                        obs = c(50, 100, 250, 400, 500, 750, 1000),
+                        obs = c(5, 10, 20, 50, 100, 250, 400, 500, 750, 1000),
                         covariate = c(TRUE, FALSE),
                         test = c("alpha", "beta", "covariate", "none"),
                         stringsAsFactors = FALSE)
 settings <- subset(settings, !(!covariate & test == "covariate"))
+settings <- subset(settings, !(dim == 50 & obs > 50))
+settings <- subset(settings, !(dim < 50 & obs < 50))
+settings <- settings[order(settings$dim),]
 
 W <- generateW("rectangle", dim = settings$dim[index]^2, 4, width = settings$dim[index])
 
 
 # Generate covariate process
 set.seed(42)
-covariates <- t(replicate(81,
-                          arima.sim(n = 1000, 
+covariates <- t(replicate(settings$dim[index]^2,
+                          arima.sim(n = 1000,
                                     list(ar = c(0.89, -0.3), ma = c(-0.1, 0.28)), 
                                     rand.gen = runif)))
-
 covariates <- covariates / max(covariates)
-covariates <- covariates[seq(settings$dim[index]^2), seq(settings$obs[index])]
+covariates[covariates < 0] <- 0
+covariates <- covariates[, seq(settings$obs[index])]
 if(settings$covariate[index]){
   covariate <- list(covariates)
 } else {
@@ -82,9 +87,11 @@ for(i in seq(iterations)){
   }
   
   sim <- glmstarma.sim(settings$obs[index], params, model, W, covariate, family = fam, n_start = 100)
+  tic()
   fit <- try(glmstarma(sim$observations, model = model, wlist = W, covariates = covariate, family = fam,
-                         control = list(parameter_init = "zero", maxit = 1000L,
+                         control = list(parameter_init = "zero", maxit = 10000L,
                                         method = "nloptr", constrained = TRUE)), TRUE)
+  time <- toc(quiet = TRUE)
   wald_test <- try(summary(fit)$coefficients, TRUE)
   
   if(!inherits(wald_test, "try-error") && settings$test[index] == "alpha"){
@@ -102,7 +109,7 @@ for(i in seq(iterations)){
     fitting_times[i] <- NA
     convergence[i] <- FALSE
   } else {
-    fitting_times[i] <- fit$convergence$fitting_time
+    fitting_times[i] <- time$toc - time$tic
     param_est[[i]] <- fit$coefficients_list
     convergence[i] <- fit$convergence$convergence
   }
@@ -116,7 +123,4 @@ results <- list(fitting_times = fitting_times,
                 setting = settings[index,])
 
 saveRDS(results, file = paste0("asymptotics/asymptotics_sim_setting_", index, ".rds"))
-
-
-
 

@@ -3,8 +3,8 @@ library("ggplot2")
 library("xtable")
 library("scales")
 
-# copula <- "Clayton"
-copula <- "Frank"
+copula <- "Clayton"
+# copula <- "Frank"
 
 
 ### Asymptotics:
@@ -16,11 +16,27 @@ settings <- do.call("rbind", settings)
 fitting_times <- sapply(results, "[[", "fitting_times")
 settings[unique(which(is.na(fitting_times), arr.ind = TRUE)[, 2]),]
 settings[which(is.na(colMeans(fitting_times))),]
+settings$fitting_time <- colMeans(fitting_times, na.rm = TRUE)
 
 # Probleme bei Settings mit 1000 Beobachtungen:
 
 results <- results[settings$obs < 1000]
 settings <- settings[settings$obs < 1000,]
+
+
+params <- lapply(results, "[[", "param_est")
+params <- lapply(params, function(x) lapply(x, unlist))
+for(i in seq_along(params)){
+  if(results[[i]]$setting$link == "log"){
+    params[[i]] <- which(sapply(params[[i]], function(y) length(y) == 1 | y[6] == 0))
+  } else {
+    params[[i]] <- which(sapply(params[[i]], function(y) length(y) == 1 | y[6] == 1))
+  }
+}
+
+settings$error <- sapply(params, length) / 1000
+# Only many problems for very high dimensional models
+
 
 # Allgemeine Asymptotik (Normalverteilung) über QQ-Plots:
 
@@ -38,7 +54,7 @@ plotIt <- function(index){
   }
 }
 
-for(i in 1:36){
+for(i in 1:44){
   pdf(file = paste0("plots/", copula, "/asymptotics/qq_dim_", asym_settings$dim[i], 
                     "_link_", asym_settings$link[i], 
                     "_obs_", asym_settings$obs[i], ".pdf"),
@@ -46,15 +62,20 @@ for(i in 1:36){
   plotIt(i)
   dev.off()
   Sys.sleep(0.5)
-  
 }
 
 #
-mean(asym_results[[34]][, 5] < 1e-5)
+which(asym_settings$dim == 5 & asym_settings$link == "identity" & asym_settings$obs == 750)
+
+mean(asym_results[[44]][, 5] < 1e-5)
 
 # Funktion um empirical size zu extrahieren:
 
+settings <- subset(settings, dim < 50)
+
+
 empirical_size <- function(constraint){
+  # browser()
   wald_result <- lapply(results, "[[", "wald_result")
   
   sub_settings <- settings[constraint,]
@@ -68,6 +89,7 @@ empirical_size <- function(constraint){
                      obs = sub_settings$obs,
                      dim = sub_settings$dim,
                      link = sub_settings$link)
+  size <- size[order(size$obs, size$link, size$dim),]
   x <- reshape(size, direction = "wide",
           idvar = c("dim", "link"), timevar = "obs", # mandatory
           v.names = c("size"), varying = c("50", "100", "250", "400", "500", "750"))
@@ -75,9 +97,18 @@ empirical_size <- function(constraint){
 }
 
 
-covariate_results <- empirical_size(settings$test == "covariate")
-alpha_results_covariate <- empirical_size(settings$test == "alpha" & settings$covariate)
-beta_results_covariate <- empirical_size(settings$test == "beta" & settings$covariate)
+covariate_results <- empirical_size(settings$test == "covariate" & settings$dim < 50)
+alpha_results_covariate <- empirical_size(settings$test == "alpha" & settings$covariate & settings$dim < 50)
+beta_results_covariate <- empirical_size(settings$test == "beta" & settings$covariate  & settings$dim < 50)
 
-alpha_results_no_covariate <- empirical_size(settings$test == "alpha" & !settings$covariate)
-beta_results_no_covariate <- empirical_size(settings$test == "beta" & !settings$covariate)
+alpha_results_no_covariate <- empirical_size(settings$test == "alpha" & !settings$covariate & settings$dim < 50)
+beta_results_no_covariate <- empirical_size(settings$test == "beta" & !settings$covariate & settings$dim < 50)
+
+settings <- subset(settings, dim < 50)
+
+ft <- aggregate(fitting_time ~ dim + link + obs, data = subset(settings, test != "none" & covariate), FUN = mean)
+ft <- reshape(ft, direction = "wide",
+        idvar = c("dim", "link"), timevar = "obs", # mandatory
+        v.names = c("fitting_time"), varying = c("50", "100", "250", "400", "500", "750"))
+
+

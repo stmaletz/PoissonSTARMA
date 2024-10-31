@@ -13,7 +13,6 @@ settings <- rbindlist(settings)
 fitting_times <- sapply(results, function(x) x$fitting_times)
 sum(is.na(fitting_times))
 which(is.na(fitting_times), arr.ind = TRUE)
-# Insgesamt 2 Fehlschlaege im linearen Modell mit 50 Beobachtungen
 
 
 # Make data.frame
@@ -37,13 +36,13 @@ for(t in c(50, 100, 250, 500)){
   plot_mae_data <- ggplot(subset(res_data, obs == t & link == "identity" & copula != "independent")) + 
     geom_boxplot(aes(x = param, group = param, y = mae_data)) + 
     facet_wrap(~copula) + 
-    labs(x = "Copula Parameter", y = "MAE in Data", fill = "Copula") + 
+    labs(x = "Copula Parameter", y = "MAE", fill = "Copula") + 
     theme_bw() + theme(legend.position = "none",text = element_text(size = 30))
   
   plot_mse_data <- ggplot(subset(res_data, obs == t & link == "identity" & copula != "independent")) + 
     geom_boxplot(aes(x = param, group = param, y = mse_data)) + 
     facet_wrap(~copula) + 
-    labs(x = "Copula Parameter", y = "MSE in Data", fill = "Copula") + 
+    labs(x = "Copula Parameter", y = "MSE", fill = "Copula") + 
     theme_bw() + theme(legend.position = "none",text = element_text(size = 30))
   
   plot_mae_param <- ggplot(subset(res_data, obs == t & link == "identity" & copula != "independent")) + 
@@ -75,13 +74,13 @@ for(t in c(50, 100, 250, 500)){
   plot_mae_data <- ggplot(subset(res_data, obs == t & link == "log" & copula != "independent")) + 
     geom_boxplot(aes(x = param, group = param, y = mae_data)) + 
     facet_wrap(~copula) + 
-    labs(x = "Copula Parameter", y = "MAE in Data", fill = "Copula") + 
+    labs(x = "Copula Parameter", y = "MAE", fill = "Copula") + 
     theme_bw() + theme(legend.position = "none",text = element_text(size = 30))
   
   plot_mse_data <- ggplot(subset(res_data, obs == t & link == "log" & copula != "independent")) + 
     geom_boxplot(aes(x = param, group = param, y = mse_data)) + 
     facet_wrap(~copula) + 
-    labs(x = "Copula Parameter", y = "MSE in Data", fill = "Copula") + 
+    labs(x = "Copula Parameter", y = "MSE", fill = "Copula") + 
     theme_bw() + theme(legend.position = "none",text = element_text(size = 30))
   
   plot_mae_param <- ggplot(subset(res_data, obs == t & link == "log" & copula != "independent")) + 

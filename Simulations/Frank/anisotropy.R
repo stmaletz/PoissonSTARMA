@@ -1,6 +1,8 @@
 library("glmSTARMA")
 library("copula")
+library("tictoc")
 
+# replicate=1-16
 index <- as.numeric(Sys.getenv("PBS_ARRAYID"))
 iterations <- 1000
 # Function for Wald-Test:
@@ -24,11 +26,13 @@ isotropy_test <- function(object){
 }
 
 
-settings <- expand.grid(dim = 9,
+settings <- expand.grid(dim = c(9, 50),
                         link = c("log", "identity"),
-                        obs = c(50, 100, 250, 500),
+                        obs = c(5, 10, 20, 50, 100, 250, 500),
                         stringsAsFactors = FALSE)
-
+settings <- subset(settings, !(dim == 50 & obs > 50))
+settings <- subset(settings, !(dim == 9 & obs < 50))
+settings <- settings[order(settings$dim),]
 
 if(settings$link[index] == "log"){
   params <- list(intercept = 0.6, past_mean = c(0.2, 0.1, 0.05), past_obs = c(0.2, 0.1, 0.05))
@@ -38,25 +42,41 @@ if(settings$link[index] == "log"){
 
 ## Generate anisotropic neighborhood:
 
-coordinates <- expand.grid(x = 1:9, y = 1:9)
+if(settings$dim[index] == 9){
+    coordinates <- expand.grid(x = 1:9, y = 1:9)
 
-W1 <- matrix(0, 81, 81)
-W2 <- matrix(0, 81, 81)
+    W1 <- matrix(0, 81, 81)
+    W2 <- matrix(0, 81, 81)
 
-for(i in 1:81){
-  # Find neighbors:
-  W1[i, which((coordinates$y == coordinates$y[i]) & (coordinates$x == (coordinates$x[i] + 1) | coordinates$x == (coordinates$x[i] - 1)))] <- 1
-  W2[i, which((coordinates$x == coordinates$x[i]) & (coordinates$y == (coordinates$y[i] + 1) | coordinates$y == (coordinates$y[i] - 1)))] <- 1
+    for(i in 1:81){
+      # Find neighbors:
+      W1[i, which((coordinates$y == coordinates$y[i]) & (coordinates$x == (coordinates$x[i] + 1) | coordinates$x == (coordinates$x[i] - 1)))] <- 1
+      W2[i, which((coordinates$x == coordinates$x[i]) & (coordinates$y == (coordinates$y[i] + 1) | coordinates$y == (coordinates$y[i] - 1)))] <- 1
+    }
+
+    W1 <- W1 / colSums(W1)
+    W2 <- W2 / colSums(W2)
+
+    W_anisotropy <- list(diag(81), W1, W2)
+    W_isotropy <- generateW("rectangle", dim = settings$dim[index]^2, 4, width = settings$dim[index])
+} else {
+    coordinates <- expand.grid(x = 1:50, y = 1:50)
+
+    W1 <- matrix(0, 2500, 2500)
+    W2 <- matrix(0, 2500, 2500)
+
+    for(i in 1:2500){
+      # Find neighbors:
+      W1[i, which((coordinates$y == coordinates$y[i]) & (coordinates$x == (coordinates$x[i] + 1) | coordinates$x == (coordinates$x[i] - 1)))] <- 1
+      W2[i, which((coordinates$x == coordinates$x[i]) & (coordinates$y == (coordinates$y[i] + 1) | coordinates$y == (coordinates$y[i] - 1)))] <- 1
+    }
+
+    W1 <- W1 / colSums(W1)
+    W2 <- W2 / colSums(W2)
+
+    W_anisotropy <- list(diag(81), W1, W2)
+    W_isotropy <- generateW("rectangle", dim = settings$dim[index]^2, 2, width = settings$dim[index])
 }
-
-W1 <- W1 / colSums(W1)
-W2 <- W2 / colSums(W2)
-
-W_anisotropy <- list(diag(81), W1, W2)
-#
-
-W_isotropy <- generateW("rectangle", dim = settings$dim[index]^2, 4, width = settings$dim[index])
-
 
 
 model <- list(intercept = "homo", past_obs = 2, past_mean = 2)
@@ -100,13 +120,16 @@ for(i in seq(iterations)){
     Sys.sleep(5)
   }
   sim <- glmstarma.sim(settings$obs[index], params, model, W_anisotropy, family = fam, n_start = 100)
+  tic()
   fit_anisotropy <- try(glmstarma(sim$observations, model = model, wlist = W_anisotropy, family = fam,
-                           control = list(parameter_init = "zero", maxit = 1000L,
+                           control = list(parameter_init = "zero", maxit = 10000L,
                                           method = "nloptr", constrained = TRUE)), TRUE)
+  time_anisotropy <- toc(quiet = TRUE)
+  tic()
   fit_isotropy <- try(glmstarma(sim$observations, model = model_isotrop, wlist = W_isotropy, family = fam,
-                              control = list(parameter_init = "zero", maxit = 1000L,
+                              control = list(parameter_init = "zero", maxit = 10000L,
                                              method = "nloptr", constrained = TRUE)), TRUE)
-  
+  time_isotropy <- toc(quiet = TRUE)
   
   if(inherits(fit_isotropy, "try-error")){
     fitting_times_isotropy[i] <- NA
@@ -116,7 +139,7 @@ for(i in seq(iterations)){
     qic_isotropy[i] <- NA
   } else {
     param_est_isotropy[[i]] <- fit_isotropy$coefficients_list
-    fitting_times_isotropy[i] <- fit_isotropy$convergence$fitting_time
+    fitting_times_isotropy[i] <- time_isotropy$toc - time_isotropy$tic
     convergence_isotropy[i] <- fit_isotropy$convergence$convergence
     residuals_isotropy[i] <- mean(residuals(fit_isotropy)^2)
     aic_isotropy[i] <- fit_isotropy$aic
@@ -135,7 +158,7 @@ for(i in seq(iterations)){
     qic_anisotropy[i] <- NA
   } else {
     param_est_anisotropy[[i]] <- fit_anisotropy$coefficients_list
-    fitting_times_anisotropy[i] <- fit_anisotropy$convergence$fitting_time
+    fitting_times_anisotropy[i] <- time_anisotropy$toc - time_anisotropy$tic
     convergence_anisotropy[i] <- fit_anisotropy$convergence$convergence
     residuals_anisotropy[i] <- mean(residuals(fit_anisotropy)^2)
     aic_anisotropy[i] <- fit_anisotropy$aic

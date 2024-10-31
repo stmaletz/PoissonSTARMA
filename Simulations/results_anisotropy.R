@@ -3,8 +3,8 @@ library("ggplot2")
 library("xtable")
 library("scales")
 
-# copula <- "Clayton"
-copula <- "Frank"
+copula <- "Clayton"
+# copula <- "Frank"
 
 # Comments are regarding clayton copula
 
@@ -50,7 +50,7 @@ settings$past_mean_iso_test <- sapply(wald_iso, function(x) mean(x$past_mean < 0
 
 
 xtable(
-  reshape(subset(settings, select = c(link, obs, past_obs_iso_test)), idvar = "link", timevar = "obs", v.names = "past_obs_iso_test", direction = "wide"),
+  reshape(subset(settings, select = c(link, obs, past_obs_iso_test), dim == 9), idvar = "link", timevar = "obs", v.names = "past_obs_iso_test", direction = "wide"),
   digits = 3)
 
 xtable(
