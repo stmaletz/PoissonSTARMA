@@ -1,6 +1,8 @@
 
 ### R code for reproducing the results from the work "Spatio-temporal Modeling of Count Data" by Maletz, Fokianos and Fried
 
+Simulations and analyses were carried out with `R 4.3.2` on a computer with two AMD Epyc 7453 processors. 48 GB RAM were allocated in each job. 
+
 The repository is structured as follows:
 1. The file `glmSTARMA_1.01.tar.gz` contains a preliminary version of an `R`-package for estimation of  PSTARMA und PSTARMAX models.
 2. The directory `Simulations` contains the code for reproducing the simulation results.
